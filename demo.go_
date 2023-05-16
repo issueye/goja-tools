@@ -1,0 +1,49 @@
+package main
+
+import "fmt"
+
+type Foo struct {
+	Code string `json:"coode"`
+	Name string `json:"name"`
+}
+
+func (f *Foo) Hello(msg string) (data string) {
+	data = fmt.Sprintf("%s  %s", f.Name, msg)
+	return
+}
+
+func (r *Repository) Log(o *LogOptions) (object.CommitIter, error) {
+	fn := commitIterFunc(o.Order)
+	if fn == nil {
+		return nil, fmt.Errorf("invalid Order=%v", o.Order)
+	}
+
+	var (
+		it  object.CommitIter
+		err error
+	)
+	if o.All {
+		it, err = r.logAll(fn)
+	} else {
+		it, err = r.log(o.From, fn)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if o.FileName != nil {
+		// for `git log --all` also check parent (if the next commit comes from the real parent)
+		it = r.logWithFile(*o.FileName, it, o.All)
+	}
+	if o.PathFilter != nil {
+		it = r.logWithPathFilter(o.PathFilter, it, o.All)
+	}
+
+	if o.Since != nil || o.Until != nil {
+		limitOptions := object.LogLimitOptions{Since: o.Since, Until: o.Until}
+		it = r.logWithLimit(it, limitOptions)
+	}
+
+	return it, nil
+}
