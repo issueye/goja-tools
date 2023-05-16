@@ -1,4 +1,4 @@
-module goja_tools
+module github.com/issueye/goja_tools
 
 go 1.19
 
